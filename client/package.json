@@ -1,0 +1,16 @@
+{
+  "name": "@addressbook/client",
+  "version": "1.0.0",
+  "description": "TypedRest client for the Address Book sample.",
+  "license": "MIT",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@addressbook/dto": "1.0.0",
+    "typedrest": "^0.4.1"
+  }
+}

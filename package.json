@@ -1,0 +1,25 @@
+{
+  "name": "addressbook",
+  "version": "1.0.0",
+  "description": "TypedRest Address Book Sample (TypeScript)",
+  "license": "MIT",
+  "private": true,
+  "workspaces": [
+    "dto",
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "start": "npm run start --workspace @addressbook/server",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.0",
+    "@types/url-template": "^2.0.31",
+    "jest": "^30.0.0",
+    "ts-jest": "^29.4.0",
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "extends": "tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "paths": {
+      "@addressbook/dto": ["dto/src"],
+      "@addressbook/client": ["client/src"],
+      "@addressbook/server": ["server/src"]
+    }
+  },
+  "include": ["tests/**/*"],
+  "references": [
+    { "path": "dto" },
+    { "path": "client" },
+    { "path": "server" }
+  ]
+}

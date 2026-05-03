@@ -1,0 +1,21 @@
+{
+  "name": "@addressbook/server",
+  "version": "1.0.0",
+  "description": "Address Book REST service.",
+  "license": "MIT",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@addressbook/dto": "1.0.0",
+    "better-sqlite3": "^11.3.0",
+    "fastify": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0"
+  }
+}
