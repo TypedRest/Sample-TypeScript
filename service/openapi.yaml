@@ -61,6 +61,8 @@ paths:
     put:
       tags: [Contacts]
       summary: Updates an existing contact.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
       requestBody:
         description: The modified contact. Its ID must match the one in the URI.
         required: true
@@ -75,14 +77,20 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "404":
           $ref: "#/components/responses/NotFound"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
     delete:
       tags: [Contacts]
       summary: Deletes an existing contact.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
       responses:
         "204":
           description: Success
         "404":
           $ref: "#/components/responses/NotFound"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
   /contacts/{id}/note:
     parameters:
       - $ref: "#/components/parameters/ContactId"
@@ -101,6 +109,8 @@ paths:
     put:
       tags: [Contacts]
       summary: Sets a note for a specific contact.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
       requestBody:
         description: The note to set.
         required: true
@@ -115,6 +125,8 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "404":
           $ref: "#/components/responses/NotFound"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
   /contacts/{id}/poke:
     parameters:
       - $ref: "#/components/parameters/ContactId"
@@ -135,6 +147,13 @@ components:
       required: true
       schema:
         type: string
+    IfMatch:
+      name: If-Match
+      in: header
+      description: The ETag from a previous GET of this resource. If the resource has changed since then, the request is rejected with 412 to prevent a lost update. Omit to update unconditionally.
+      required: false
+      schema:
+        type: string
   responses:
     BadRequest:
       description: Missing or invalid request body
@@ -144,6 +163,12 @@ components:
             $ref: "#/components/schemas/ProblemDetails"
     NotFound:
       description: Specified contact not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    PreconditionFailed:
+      description: The If-Match header does not match the current ETag; the resource was modified since it was last read
       content:
         application/problem+json:
           schema:

@@ -1,7 +1,7 @@
-import { Router } from "express";
+import { Router, type Request } from "express";
 import type { Contact, Note } from "@address-book/dto";
 import type { ContactsService } from "./ContactsService.ts";
-import { BadRequestError } from "./errors.ts";
+import { BadRequestError, PreconditionFailedError } from "./errors.ts";
 
 /**
  * Provides access to contacts in an address book.
@@ -21,10 +21,12 @@ export function contactsRouter(service: ContactsService): Router {
         .put("/:id", (req, res) => {
             const contact = parseContact(req.body);
             if (contact.id !== req.params.id) throw new BadRequestError(`ID in URI (${req.params.id}) must match the ID in the body (${contact.id}).`);
+            checkIfMatch(req, () => service.read(req.params.id));
             service.update(contact);
             res.sendStatus(204);
         })
         .delete("/:id", (req, res) => {
+            checkIfMatch(req, () => service.read(req.params.id));
             service.delete(req.params.id);
             res.sendStatus(204);
         })
@@ -32,13 +34,42 @@ export function contactsRouter(service: ContactsService): Router {
             res.json(service.readNote(req.params.id));
         })
         .put("/:id/note", (req, res) => {
-            service.setNote(req.params.id, parseNote(req.body));
+            const note = parseNote(req.body);
+            checkIfMatch(req, () => service.readNote(req.params.id));
+            service.setNote(req.params.id, note);
             res.sendStatus(204);
         })
         .post("/:id/poke", (req, res) => {
             service.poke(req.params.id);
             res.sendStatus(204);
         });
+}
+
+/**
+ * Implements optimistic concurrency: if the request has an `If-Match` header,
+ * compares it with the ETag Express would send for the current state of the resource in a GET response.
+ * @param req The incoming request.
+ * @param readCurrent Returns the current state of the resource. Only called if the request has an `If-Match` header.
+ * @throws {PreconditionFailedError} The resource was changed since the client last read it.
+ */
+function checkIfMatch(req: Request, readCurrent: () => unknown): void {
+    const ifMatch = req.get("If-Match");
+    if (!ifMatch) return;
+
+    const current = readCurrent(); // Throws NotFoundError if the resource does not exist
+    if (ifMatch.trim() === "*") return;
+
+    // Serialize and hash the same way as res.json() does for GET responses
+    const { app } = req;
+    const etagFn = app.get("etag fn") as ((body: string, encoding: BufferEncoding) => string) | undefined;
+    const currentETag = etagFn?.(JSON.stringify(current, app.get("json replacer"), app.get("json spaces")), "utf8");
+
+    // Weak comparison, since Express generates weak ETags by default
+    const opaque = (tag: string) => tag.replace(/^W\//, "");
+    const requested = ifMatch.match(/(?:W\/)?"[^"]*"/g) ?? [];
+    if (!currentETag || !requested.some(tag => opaque(tag) === opaque(currentETag))) {
+        throw new PreconditionFailedError("The resource was modified since it was last read. Reload it and try again.");
+    }
 }
 
 function parseContact(body: unknown): Contact {

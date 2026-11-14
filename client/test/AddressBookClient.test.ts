@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "vitest";
-import { NotFoundError } from "typedrest/errors";
+import { ConcurrencyError, NotFoundError } from "typedrest/errors";
 import type { Contact, Note } from "@address-book/dto";
 import { AddressBookClient } from "../src/index.ts";
 
@@ -59,6 +59,22 @@ describe("AddressBookClient", () => {
         await client.contacts.get("1").note.set(note);
 
         expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    test("reports lost update of note as concurrency error", async () => {
+        fetchMock.mockOnceIf(
+            req => req.method === "GET" && req.url === "http://localhost/contacts/1/note",
+            JSON.stringify({ content: "old" }),
+            { headers: { "Content-Type": "application/json", "ETag": "W/\"1\"" } }
+        );
+        fetchMock.mockOnceIf(
+            req => req.method === "PUT" && req.url === "http://localhost/contacts/1/note" && req.headers.get("If-Match") === "W/\"1\"",
+            { status: 412 }
+        );
+        const endpoint = client.contacts.get("1").note;
+
+        await endpoint.read();
+        await expect(endpoint.set({ content: "new" })).rejects.toBeInstanceOf(ConcurrencyError);
     });
 
     test("pokes contact", async () => {

@@ -1,5 +1,5 @@
 import { describe, expect } from "vitest";
-import { BadRequestError as HttpBadRequestError, NotFoundError as HttpNotFoundError } from "typedrest/errors";
+import { BadRequestError as HttpBadRequestError, ConcurrencyError, NotFoundError as HttpNotFoundError } from "typedrest/errors";
 import type { Contact, Note } from "@address-book/dto";
 import { NotFoundError } from "../src/errors.ts";
 import { apiTest as test } from "./apiTest.ts";
@@ -97,5 +97,142 @@ describe("contacts API", () => {
         await client.contacts.get("1").poke.invoke();
 
         expect(service.poke).toHaveBeenCalledWith("1");
+    });
+
+    describe("optimistic concurrency", () => {
+        const contact: Contact = { id: "1", firstName: "John", lastName: "Smith" };
+
+        /** Reads a resource with a plain GET request and returns the ETag Express sent. */
+        async function getETag(uri: URL): Promise<string> {
+            const response = await fetch(uri);
+            const eTag = response.headers.get("ETag");
+            expect(eTag).toBeTruthy();
+            return eTag!;
+        }
+
+        test("updates contact with matching If-Match", async ({ service, baseUri }) => {
+            service.read.mockReturnValue(contact);
+            const uri = new URL("contacts/1", baseUri);
+            const eTag = await getETag(uri);
+
+            const response = await fetch(uri, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", "If-Match": eTag },
+                body: JSON.stringify({ ...contact, lastName: "Doe" })
+            });
+
+            expect(response.status).toBe(204);
+            expect(service.update).toHaveBeenCalledWith({ ...contact, lastName: "Doe" });
+        });
+
+        test("rejects contact update with stale If-Match", async ({ service, baseUri }) => {
+            service.read.mockReturnValue(contact);
+            const uri = new URL("contacts/1", baseUri);
+            const eTag = await getETag(uri);
+            service.read.mockReturnValue({ ...contact, firstName: "Johnny" });
+
+            const response = await fetch(uri, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", "If-Match": eTag },
+                body: JSON.stringify({ ...contact, lastName: "Doe" })
+            });
+
+            expect(response.status).toBe(412);
+            expect(response.headers.get("Content-Type")).toMatch(/^application\/problem\+json/);
+            expect(await response.json()).toMatchObject({ status: 412, title: "PreconditionFailedError" });
+            expect(service.update).not.toHaveBeenCalled();
+        });
+
+        test("deletes contact with matching If-Match", async ({ service, baseUri }) => {
+            service.read.mockReturnValue(contact);
+            const uri = new URL("contacts/1", baseUri);
+            const eTag = await getETag(uri);
+
+            const response = await fetch(uri, { method: "DELETE", headers: { "If-Match": eTag } });
+
+            expect(response.status).toBe(204);
+            expect(service.delete).toHaveBeenCalledWith("1");
+        });
+
+        test("rejects contact delete with stale If-Match", async ({ service, baseUri }) => {
+            service.read.mockReturnValue(contact);
+            const uri = new URL("contacts/1", baseUri);
+            const eTag = await getETag(uri);
+            service.read.mockReturnValue({ ...contact, firstName: "Johnny" });
+
+            const response = await fetch(uri, { method: "DELETE", headers: { "If-Match": eTag } });
+
+            expect(response.status).toBe(412);
+            expect(service.delete).not.toHaveBeenCalled();
+        });
+
+        test("accepts If-Match: * for existing contact", async ({ service, baseUri }) => {
+            service.read.mockReturnValue(contact);
+
+            const response = await fetch(new URL("contacts/1", baseUri), { method: "DELETE", headers: { "If-Match": "*" } });
+
+            expect(response.status).toBe(204);
+        });
+
+        test("reports missing contact on conditional delete", async ({ service, baseUri }) => {
+            service.read.mockImplementation(id => { throw new NotFoundError(`Contact '${id}' not found.`); });
+
+            const response = await fetch(new URL("contacts/1", baseUri), { method: "DELETE", headers: { "If-Match": "\"abc\"" } });
+
+            expect(response.status).toBe(404);
+            expect(service.delete).not.toHaveBeenCalled();
+        });
+
+        test("sets note with matching If-Match", async ({ service, baseUri }) => {
+            service.readNote.mockReturnValue({ content: "old" });
+            const uri = new URL("contacts/1/note", baseUri);
+            const eTag = await getETag(uri);
+
+            const response = await fetch(uri, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", "If-Match": eTag },
+                body: JSON.stringify({ content: "new" })
+            });
+
+            expect(response.status).toBe(204);
+            expect(service.setNote).toHaveBeenCalledWith("1", { content: "new" });
+        });
+
+        test("rejects note with stale If-Match", async ({ service, baseUri }) => {
+            service.readNote.mockReturnValue({ content: "old" });
+            const uri = new URL("contacts/1/note", baseUri);
+            const eTag = await getETag(uri);
+            service.readNote.mockReturnValue({ content: "changed by someone else" });
+
+            const response = await fetch(uri, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", "If-Match": eTag },
+                body: JSON.stringify({ content: "new" })
+            });
+
+            expect(response.status).toBe(412);
+            expect(service.setNote).not.toHaveBeenCalled();
+        });
+
+        test("client saves note read through same endpoint", async ({ service, client }) => {
+            service.readNote.mockReturnValue({ content: "old" });
+            const endpoint = client.contacts.get("1").note;
+
+            await endpoint.read();
+            await endpoint.set({ content: "new" });
+
+            expect(service.setNote).toHaveBeenCalledWith("1", { content: "new" });
+        });
+
+        test("client reports lost update of note as ConcurrencyError", async ({ service, client }) => {
+            service.readNote.mockReturnValue({ content: "old" });
+            const endpoint = client.contacts.get("1").note;
+
+            await endpoint.read();
+            service.readNote.mockReturnValue({ content: "changed by someone else" });
+
+            await expect(endpoint.set({ content: "new" })).rejects.toBeInstanceOf(ConcurrencyError);
+            expect(service.setNote).not.toHaveBeenCalled();
+        });
     });
 });

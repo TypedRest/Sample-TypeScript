@@ -15,6 +15,13 @@ export class BadRequestError extends Error {
 }
 
 /**
+ * Thrown when a precondition such as `If-Match` does not hold, e.g. because the resource was changed by someone else in the meantime. Reported as HTTP 412.
+ */
+export class PreconditionFailedError extends Error {
+    override name = "PreconditionFailedError";
+}
+
+/**
  * Reports errors with appropriate HTTP status codes as RFC 9457 problem details.
  */
 export const problemDetails: ErrorRequestHandler = (err, req, res, _next) => {
@@ -33,6 +40,7 @@ export const problemDetails: ErrorRequestHandler = (err, req, res, _next) => {
 function statusCodeFor(err: unknown): number {
     if (err instanceof NotFoundError) return 404;
     if (err instanceof BadRequestError) return 400;
+    if (err instanceof PreconditionFailedError) return 412;
 
     // Errors raised by Express itself (e.g. malformed JSON) carry their own status code
     const status = (err as { status?: unknown })?.status;
