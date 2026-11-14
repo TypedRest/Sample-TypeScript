@@ -1,0 +1,17 @@
+{
+  "name": "@address-book/web",
+  "description": "Web page that uses the Address Book client in the browser.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@address-book/client": "*"
+  },
+  "devDependencies": {
+    "vite": "8.3.8"
+  }
+}

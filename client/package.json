@@ -1,16 +1,19 @@
 {
-  "name": "@addressbook/client",
-  "version": "1.0.0",
-  "description": "TypedRest client for the Address Book sample.",
-  "license": "MIT",
+  "name": "@address-book/client",
+  "description": "Type-safe TypedRest client for the Address Book REST API.",
   "private": true,
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": "./src/index.ts",
   "scripts": {
-    "build": "tsc -b"
+    "test": "vitest run",
+    "typecheck": "tsc"
   },
   "dependencies": {
-    "@addressbook/dto": "1.0.0",
-    "typedrest": "^0.4.1"
+    "@address-book/dto": "*",
+    "typedrest": "0.6.0"
+  },
+  "devDependencies": {
+    "vitest": "5.1.0",
+    "vitest-fetch-mock": "0.4.5"
   }
 }

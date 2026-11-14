@@ -1,0 +1,23 @@
+{
+  "name": "@address-book/service",
+  "description": "Address Book REST API service.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/main.ts",
+    "dev": "node --watch src/main.ts",
+    "test": "vitest run",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@address-book/dto": "*",
+    "@scalar/express-api-reference": "0.10.37",
+    "express": "5.3.0"
+  },
+  "devDependencies": {
+    "@address-book/client": "*",
+    "@types/express": "5.0.6",
+    "@types/node": "26.6.6",
+    "vitest": "5.1.0"
+  }
+}

@@ -1,0 +1,183 @@
+﻿openapi: 3.1.0
+info:
+  title: Address Book
+  description: Simple REST API for storing contacts in an address book.
+  version: 1.0.0
+tags:
+  - name: Contacts
+paths:
+  /contacts:
+    get:
+      tags: [Contacts]
+      summary: Returns all contacts.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Contact"
+    post:
+      tags: [Contacts]
+      summary: Creates a new contact.
+      requestBody:
+        description: The contact to create (without an ID).
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Contact"
+      responses:
+        "201":
+          description: Created
+          headers:
+            Location:
+              description: The URI of the new contact.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contact"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /contacts/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ContactId"
+    get:
+      tags: [Contacts]
+      summary: Returns a specific contact.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contact"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Contacts]
+      summary: Updates an existing contact.
+      requestBody:
+        description: The modified contact. Its ID must match the one in the URI.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Contact"
+      responses:
+        "204":
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Contacts]
+      summary: Deletes an existing contact.
+      responses:
+        "204":
+          description: Success
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /contacts/{id}/note:
+    parameters:
+      - $ref: "#/components/parameters/ContactId"
+    get:
+      tags: [Contacts]
+      summary: Returns the note for a specific contact.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Contacts]
+      summary: Sets a note for a specific contact.
+      requestBody:
+        description: The note to set.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Note"
+      responses:
+        "204":
+          description: Success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /contacts/{id}/poke:
+    parameters:
+      - $ref: "#/components/parameters/ContactId"
+    post:
+      tags: [Contacts]
+      summary: Pokes a contact.
+      responses:
+        "204":
+          description: Success
+        "404":
+          $ref: "#/components/responses/NotFound"
+components:
+  parameters:
+    ContactId:
+      name: id
+      in: path
+      description: The ID of the contact.
+      required: true
+      schema:
+        type: string
+  responses:
+    BadRequest:
+      description: Missing or invalid request body
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    NotFound:
+      description: Specified contact not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+  schemas:
+    Contact:
+      description: A contact in an address book.
+      type: object
+      required: [firstName, lastName]
+      properties:
+        id:
+          type: string
+          description: The ID of the contact. Assigned by the service when the contact is created.
+        firstName:
+          type: string
+          description: The first name of the contact.
+        lastName:
+          type: string
+          description: The last name of the contact.
+    Note:
+      description: A note about a specific Contact.
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          description: The content of the note.
+    ProblemDetails:
+      description: Error details as defined in RFC 9457.
+      type: object
+      properties:
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string

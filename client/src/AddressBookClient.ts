@@ -1,9 +1,7 @@
-import { endpoints } from "typedrest";
-import type { Contact } from "@addressbook/dto";
-import { ContactElementEndpoint } from "./ContactElementEndpoint";
-
-const { EntryEndpoint } = endpoints;
-const { GenericCollectionEndpoint } = endpoints.generic;
+import { EntryEndpoint } from "typedrest/endpoints";
+import { GenericCollectionEndpoint } from "typedrest/endpoints/generic";
+import type { Contact } from "@address-book/dto";
+import { ContactElementEndpoint } from "./ContactElementEndpoint.ts";
 
 /**
  * Provides a type-safe client for the Address Book REST API.
@@ -17,11 +15,10 @@ export class AddressBookClient extends EntryEndpoint {
         super(uri);
     }
 
-    /** A collection of contacts in the address book. */
+    /**
+     * A collection of contacts in an address book.
+     */
     get contacts() {
-        return new GenericCollectionEndpoint<Contact, ContactElementEndpoint>(
-            this,
-            "contacts",
-            ContactElementEndpoint);
+        return new GenericCollectionEndpoint<Contact, ContactElementEndpoint>(this, "./contacts", ContactElementEndpoint);
     }
 }

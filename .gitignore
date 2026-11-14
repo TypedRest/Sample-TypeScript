@@ -1,6 +1,4 @@
 node_modules/
 dist/
-*.tsbuildinfo
-*.log
-addressbook.db
-addressbook.db-journal
+*.db
+*.db-*

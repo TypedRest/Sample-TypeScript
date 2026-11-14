@@ -1,12 +1,10 @@
 {
-  "name": "@addressbook/dto",
-  "version": "1.0.0",
-  "description": "Shared DTOs for the Address Book sample.",
-  "license": "MIT",
+  "name": "@address-book/dto",
+  "description": "DTOs shared by the Address Book client and service.",
   "private": true,
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": "./src/index.ts",
   "scripts": {
-    "build": "tsc -b"
+    "typecheck": "tsc"
   }
 }
