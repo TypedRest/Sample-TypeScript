@@ -7,7 +7,7 @@ The code is split across npm workspaces:
 - [service/](service/): an [Express](https://expressjs.com/) service
 - [client/](client/): a TypedRest client library
 - [dto/](dto/): DTOs shared by the client and the service
-- [web/](web/): a web page that uses the client in the browser, built with [Vite](https://vite.dev/)
+- [web/](web/): a web page that uses the client in the browser, built with [SolidJS](https://www.solidjs.com/) and [Vite](https://vite.dev/)
 
 ## Building
 
@@ -37,6 +37,12 @@ To work on the web page with hot reloading, keep the service running and start t
 ```sh
 npm run dev -w web
 ```
+
+## Components and endpoints
+
+The web page's component tree mirrors the client's endpoint tree: [`ContactList`](web/src/ContactList.tsx) works with the contacts collection, each [`ContactItem`](web/src/ContactItem.tsx) with one contact and each [`ContactNote`](web/src/ContactNote.tsx) with that contact's note.
+
+Each component keeps its endpoint for as long as it exists. This matters because TypedRest stores ETags on the endpoint object: reading again sends `If-None-Match`, and saving sends `If-Match` so a server that checks it can reject lost updates. Each component also passes an `AbortSignal` to its reads, which cancels requests that are still running when the component is removed.
 
 ## OpenAPI
 
