@@ -13,7 +13,7 @@
     "typedrest": "0.6.3"
   },
   "devDependencies": {
-    "vitest": "5.1.1",
+    "vitest": "5.1.2",
     "vitest-fetch-mock": "0.4.5"
   }
 }
