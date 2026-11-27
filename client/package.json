@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@address-book/dto": "*",
-    "typedrest": "0.6.3"
+    "typedrest": "0.6.4"
   },
   "devDependencies": {
     "vitest": "5.1.2",
